@@ -1,8 +1,7 @@
-import requests
 from bs4 import BeautifulSoup
 import json
 from pprint import pprint
-
+import requests
 
 def getSoup(link):
     req = requests.get(link)
@@ -10,30 +9,52 @@ def getSoup(link):
     soup = BeautifulSoup(html, "html.parser")
     return soup
 
-def get_page_games(page_no):
-    product_links = []
-    link = "https://gg.deals/games/?page={}".format(page_no)
+def getSoup_headers(link, headers):
+    req = requests.get(link, headers=headers)
+    html = req.content
+    soup = BeautifulSoup(html, "html.parser")
+    return soup
+
+def get_page_games(link):
     soup = getSoup(link)
+    game_ids = []
     soup = soup.find("div", {"class": "grid-list"})
     games = soup.findAll("div", {"class": "grid-layout"})
     for game in games:
-        product_link = game.find("a")['href']
-        product_link = "https://gg.deals{}".format(product_link)
-        product_links.append(product_link)
-        print(product_link)
-    return product_links
+        game_id = game["data-container-game-id"]
+        game_ids.append(game_id)
+        print(game_id)
+    return game_ids
 
+def get_price(game_id):
+    link = "https://gg.deals/us/games/offers/{}/?GameOffersSearch%5BloadMore%5D=1".format(game_id)
+    headers = {"X-Requested-With": "XMLHttpRequest"}
+    soup = getSoup_headers(link, headers = headers)
+    #CDKEYS, ENEBA, MMOGA
+    keyshops = soup.findAll("div", {"class": "game-deals-item"})
+    ret = ["", ""]
+    for keyshop in keyshops:
+        shop = keyshop.find("div", {"class": "deal-hoverable action-wrap"})
+        shop = shop.find("img")['alt']
+        price = keyshop.find("span", {"class": "price"})
+        price = price.find("span", {"class": "numeric"}).text[2:]
+        if shop == 'CDKeys.com' or shop == 'Eneba' or shop == 'MMOGA US':
+            ret[0] = shop
+            ret[1] = price
+            break
+    return ret
 
 def get_games():
-    soup = getSoup("https://gg.deals/games/?page=1")
-    last_page = int(soup.find("div", {"class": "list-pager"}).find(
-        "li", {"class": "last"}).find("a")['href'].split("=")[1])
-    
-    for i in range(1, last_page+1):
-        get_page_games(str(i))
-    
-    # print(last_page)
+    games = {}
+    games["game_ids"] = []
+    for i in range(1, 41):
+        link = "https://gg.deals/games/?page={}".format(i)
+        games["game_ids"].extend(get_page_games(link))
+        
+    with open("games.json", "w") as f:
+        json.dump(games, f)
 
 
 def driver():
     get_games()
+    # print(get_price("80011"))

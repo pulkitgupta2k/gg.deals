@@ -32,15 +32,17 @@ def get_price(game_id):
     soup = getSoup_headers(link, headers = headers)
     #CDKEYS, ENEBA, MMOGA
     keyshops = soup.findAll("div", {"class": "game-deals-item"})
-    ret = ["", ""]
+    ret = ["", "", ""]
+    name = soup.find("div", {"class":"ellipsis title"})['title']
+    ret[0] = name
     for keyshop in keyshops:
         shop = keyshop.find("div", {"class": "deal-hoverable action-wrap"})
         shop = shop.find("img")['alt']
         price = keyshop.find("span", {"class": "price"})
         price = price.find("span", {"class": "numeric"}).text[2:]
         if shop == 'CDKeys.com' or shop == 'Eneba' or shop == 'MMOGA US':
-            ret[0] = shop
-            ret[1] = price
+            ret[1] = shop
+            ret[2] = price
             break
     return ret
 
@@ -60,8 +62,11 @@ def get_prices():
         games = json.load(f)
 
     for game in games["game_ids"]:
-        game_details[game] = get_price(game)
-        print(game_details[game])
+        try:
+            game_details[game] = get_price(game)
+            print(game_details[game])
+        except:
+            pass
 
     with open("game_details.json", "w") as f:
         json.dump(game_details, f)
@@ -70,3 +75,4 @@ def get_prices():
 def driver():
     # get_games()
     get_prices()
+    # print(get_price("80011"))

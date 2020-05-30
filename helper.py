@@ -50,11 +50,23 @@ def get_games():
     for i in range(1, 41):
         link = "https://gg.deals/games/?page={}".format(i)
         games["game_ids"].extend(get_page_games(link))
-        
+    
     with open("games.json", "w") as f:
         json.dump(games, f)
 
+def get_prices():
+    game_details = {}
+    with open("games.json") as f:
+        games = json.load(f)
+
+    for game in games["game_ids"]:
+        game_details[game] = get_price(game)
+        print(game_details[game])
+
+    with open("game_details.json", "w") as f:
+        json.dump(game_details, f)
+
 
 def driver():
-    get_games()
-    # print(get_price("80011"))
+    # get_games()
+    get_prices()
